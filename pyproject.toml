@@ -36,6 +36,7 @@ dev = [
 ffl-ingest = "scripts.ingest:main"
 ffl-api = "ffl.api.main:run"
 ffl-mcp = "ffl.mcp_server.server:run"
+ffl-geo-seed = "ffl.ingestion.geo_seeder:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ffl", "scripts"]

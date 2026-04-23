@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ffl.config import settings
 from ffl.database import engine
-from ffl.api.routers import address_lookup, changes, zip_lookup
+from ffl.api.routers import address_lookup, changes, geo_reference, zip_lookup
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(address_lookup.router, prefix="/api/v1", tags=["lookup"])
 app.include_router(zip_lookup.router, prefix="/api/v1", tags=["lookup"])
 app.include_router(changes.router, prefix="/api/v1", tags=["lookup"])
+app.include_router(geo_reference.router, prefix="/api/v1", tags=["geo-reference"])
 
 
 @app.get("/health", tags=["meta"])

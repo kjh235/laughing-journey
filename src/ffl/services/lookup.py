@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ffl.models import Address, Business, ChangeLog, License, LicenseType
+from ffl.models.ref_zip_code import RefZipCode
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +148,29 @@ async def lookup_by_zip(
     ).one_or_none()
 
     if not centroid or centroid.lat is None or centroid.lng is None:
-        # Fallback: plain ZIP match
+        # Try ref_zip_codes for an authoritative centroid
+        ref_row = await session.get(RefZipCode, zip5)
+        if ref_row is not None:
+            center = ST_SetSRID(
+                ST_MakePoint(float(ref_row.longitude), float(ref_row.latitude)), 4326
+            )
+            radius_m = radius_miles * MILES_TO_METERS
+            q = q.where(
+                ST_DWithin(
+                    cast(Address.geom, text("geography")),
+                    cast(center, text("geography")),
+                    radius_m,
+                )
+            ).order_by(
+                ST_Distance(
+                    cast(Address.geom, text("geography")),
+                    cast(center, text("geography")),
+                )
+            ).limit(500)
+            results = (await session.execute(q)).scalars().all()
+            return [_license_to_dict(r) for r in results]
+
+        # Last resort: plain ZIP match
         q = q.where(Address.zip == zip5)
         results = (await session.execute(q)).scalars().all()
         return [_license_to_dict(r) for r in results]
